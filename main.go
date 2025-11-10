@@ -14,7 +14,16 @@ func main() {
 	}
 
 	basePath := filepath.Dir(".")
-	serveMux.Handle("/", http.FileServer(http.Dir(basePath)))
+	serveMux.Handle("/app/", http.StripPrefix("/app", http.FileServer(http.Dir(basePath))))
+
+	serveMux.HandleFunc(
+		"/healthz/",
+		func(writer http.ResponseWriter, request *http.Request) {
+			writer.Header().Add("Content-Type", "text/plain; charset=utf-8")
+			writer.WriteHeader(200)
+			writer.Write([]byte("OK"))
+		},
+	)
 
 	err := server.ListenAndServe()
 	if err != nil {
