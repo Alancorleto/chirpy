@@ -24,9 +24,9 @@ func main() {
 	apiCfg := apiConfig{}
 
 	serveMux.Handle("/app/", apiCfg.middlewareMetricsInc(http.StripPrefix("/app", http.FileServer(http.Dir(filepathRoot)))))
-	serveMux.HandleFunc("/healthz/", healthzResponse)
-	serveMux.HandleFunc("/metrics/", apiCfg.metricsResponse)
-	serveMux.HandleFunc("/reset/", apiCfg.metricsReset)
+	serveMux.HandleFunc("GET /healthz", healthzResponse)
+	serveMux.HandleFunc("GET /metrics", apiCfg.metricsResponse)
+	serveMux.HandleFunc("POST /reset", apiCfg.metricsReset)
 
 	log.Printf("Serving files from %s on port: %s\n", filepathRoot, port)
 	err := server.ListenAndServe()
