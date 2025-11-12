@@ -27,6 +27,7 @@ func main() {
 	serveMux.HandleFunc("GET /api/healthz", healthzResponse)
 	serveMux.HandleFunc("GET /admin/metrics", apiCfg.metricsResponse)
 	serveMux.HandleFunc("POST /admin/reset", apiCfg.metricsReset)
+	serveMux.HandleFunc("POST /api/validate_chirp", validateChirpHandler)
 
 	log.Printf("Serving files from %s on port: %s\n", filepathRoot, port)
 	err := server.ListenAndServe()
