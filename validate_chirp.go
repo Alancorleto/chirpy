@@ -36,12 +36,15 @@ func cleanProfanities(body string) string {
 		"fornax":    {},
 	}
 	censoredWord := "****"
+
 	words := strings.Split(body, " ")
 	for i, word := range words {
 		loweredWord := strings.ToLower(word)
-		if _, ok := profanities[loweredWord]; ok {
+		_, isProfanity := profanities[loweredWord]
+		if isProfanity {
 			words[i] = censoredWord
 		}
 	}
+
 	return strings.Join(words, " ")
 }
