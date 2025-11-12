@@ -1,59 +1,47 @@
 package main
 
 import (
-	"encoding/json"
-	"log"
+	"fmt"
 	"net/http"
+	"strings"
 )
 
 func validateChirpHandler(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
 		Body string `json:"body"`
 	}
+	type returnVals struct {
+		CleanedBody string `json:"cleaned_body"`
+	}
 
-	decoder := json.NewDecoder(r.Body)
-	params := parameters{}
-	err := decoder.Decode(&params)
+	params, err := parseRequestParameters[parameters](r)
 	if err != nil {
-		log.Printf("Error decoding parameters: %s", err)
-		w.WriteHeader(500)
+		respondWithError(w, 500, fmt.Sprintf("Error decoding parameters: %s", err))
 		return
 	}
 
-	if len(params.Body) > 140 {
-		type returnValsError struct {
-			// the key will be the name of struct field unless you give it an explicit JSON tag
-			Error string `json:"error"`
-		}
-		respBodyError := returnValsError{
-			Error: "Chirp is too long",
-		}
-		dat, err := json.Marshal(respBodyError)
-		if err != nil {
-			log.Printf("Error marshalling JSON: %s", err)
-			w.WriteHeader(500)
-			return
-		}
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(400)
-		w.Write(dat)
+	const maxChirpLength = 140
+	if len(params.Body) > maxChirpLength {
+		respondWithError(w, 400, "Chirp is too long")
 	} else {
-		type returnVals struct {
-			// the key will be the name of struct field unless you give it an explicit JSON tag
-			Valid bool `json:"valid"`
-		}
-		respBody := returnVals{
-			Valid: true,
-		}
-		dat, err := json.Marshal(respBody)
-		if err != nil {
-			log.Printf("Error marshalling JSON: %s", err)
-			w.WriteHeader(500)
-			return
-		}
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(200)
-		w.Write(dat)
+		cleanedBody := cleanProfanities(params.Body)
+		respondWithJSON(w, 200, returnVals{CleanedBody: cleanedBody})
 	}
+}
 
+func cleanProfanities(body string) string {
+	profanities := map[string]struct{}{
+		"kerfuffle": {},
+		"sharbert":  {},
+		"fornax":    {},
+	}
+	censoredWord := "****"
+	words := strings.Split(body, " ")
+	for i, word := range words {
+		loweredWord := strings.ToLower(word)
+		if _, ok := profanities[loweredWord]; ok {
+			words[i] = censoredWord
+		}
+	}
+	return strings.Join(words, " ")
 }
