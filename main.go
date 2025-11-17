@@ -15,7 +15,7 @@ import (
 
 type apiConfig struct {
 	fileserverHits atomic.Int32
-	dbQueries      *database.Queries
+	db             *database.Queries
 }
 
 func main() {
@@ -38,7 +38,7 @@ func main() {
 	}
 
 	apiCfg := apiConfig{
-		dbQueries: dbQueries,
+		db: dbQueries,
 	}
 
 	serveMux.Handle("/app/", apiCfg.middlewareMetricsInc(http.StripPrefix("/app", http.FileServer(http.Dir(filepathRoot)))))
@@ -46,6 +46,7 @@ func main() {
 	serveMux.HandleFunc("GET /admin/metrics", apiCfg.metricsResponse)
 	serveMux.HandleFunc("POST /admin/reset", apiCfg.metricsReset)
 	serveMux.HandleFunc("POST /api/validate_chirp", validateChirpHandler)
+	serveMux.HandleFunc("POST /api/users", apiCfg.createUserHandler)
 
 	log.Printf("Serving files from %s on port: %s\n", filepathRoot, port)
 	err = server.ListenAndServe()
