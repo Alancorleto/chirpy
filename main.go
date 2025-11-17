@@ -44,6 +44,7 @@ func main() {
 	serveMux.Handle("/app/", apiCfg.middlewareMetricsInc(http.StripPrefix("/app", http.FileServer(http.Dir(filepathRoot)))))
 	serveMux.HandleFunc("GET /api/healthz", healthzResponse)
 	serveMux.HandleFunc("GET /admin/metrics", apiCfg.metricsResponse)
+	serveMux.HandleFunc("GET /api/chirps", apiCfg.getChirpsHandler)
 	serveMux.HandleFunc("POST /admin/reset", apiCfg.metricsReset)
 	serveMux.HandleFunc("POST /api/validate_chirp", validateChirpHandler)
 	serveMux.HandleFunc("POST /api/users", apiCfg.createUserHandler)

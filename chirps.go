@@ -44,6 +44,20 @@ func (cfg *apiConfig) createChirpHandler(writer http.ResponseWriter, request *ht
 	respondWithJSON(writer, 201, fromDatabaseChirpToChirp(chirp))
 }
 
+func (cfg *apiConfig) getChirpsHandler(writer http.ResponseWriter, request *http.Request) {
+	dbChirps, err := cfg.db.GetChirps(request.Context())
+	if err != nil {
+		respondWithError(writer, 500, fmt.Sprintf("Error getting chirps: %s", err))
+		return
+	}
+
+	chirps := []Chirp{}
+	for _, dbChirp := range dbChirps {
+		chirps = append(chirps, fromDatabaseChirpToChirp(dbChirp))
+	}
+	respondWithJSON(writer, 200, chirps)
+}
+
 func fromDatabaseChirpToChirp(dbChirp database.Chirp) Chirp {
 	return Chirp{
 		ID:        dbChirp.ID,
