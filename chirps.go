@@ -58,6 +58,21 @@ func (cfg *apiConfig) getChirpsHandler(writer http.ResponseWriter, request *http
 	respondWithJSON(writer, 200, chirps)
 }
 
+func (cfg *apiConfig) getChirpHandler(writer http.ResponseWriter, request *http.Request) {
+	pathParameter := request.PathValue("chirpID")
+	userID, err := uuid.Parse(pathParameter)
+	if err != nil {
+		respondWithError(writer, 500, fmt.Sprintf("Could not parse user id: %s", err))
+		return
+	}
+	chirp, err := cfg.db.GetChirp(request.Context(), userID)
+	if err != nil {
+		respondWithError(writer, 404, "chirp not found")
+		return
+	}
+	respondWithJSON(writer, 200, fromDatabaseChirpToChirp(chirp))
+}
+
 func fromDatabaseChirpToChirp(dbChirp database.Chirp) Chirp {
 	return Chirp{
 		ID:        dbChirp.ID,
