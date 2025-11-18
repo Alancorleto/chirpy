@@ -50,6 +50,7 @@ func main() {
 	serveMux.HandleFunc("POST /api/validate_chirp", validateChirpHandler)
 	serveMux.HandleFunc("POST /api/users", apiCfg.createUserHandler)
 	serveMux.HandleFunc("POST /api/chirps", apiCfg.createChirpHandler)
+	serveMux.HandleFunc("POST /api/login", apiCfg.loginHandler)
 
 	log.Printf("Serving files from %s on port: %s\n", filepathRoot, port)
 	err = server.ListenAndServe()
