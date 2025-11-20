@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/alancorleto/chirpy/internal/auth"
 	"github.com/alancorleto/chirpy/internal/database"
 	"github.com/google/uuid"
 )
@@ -19,8 +20,7 @@ type Chirp struct {
 
 func (cfg *apiConfig) createChirpHandler(writer http.ResponseWriter, request *http.Request) {
 	type parameters struct {
-		Body   string    `json:"body"`
-		UserID uuid.UUID `json:"user_id"`
+		Body string `json:"body"`
 	}
 
 	params, err := parseRequestParameters[parameters](request)
@@ -29,11 +29,23 @@ func (cfg *apiConfig) createChirpHandler(writer http.ResponseWriter, request *ht
 		return
 	}
 
+	bearerToken, err := auth.GetBearerToken(request.Header)
+	if err != nil {
+		respondWithError(writer, 401, fmt.Sprintf("Error getting bearer token: %s", err))
+		return
+	}
+
+	userID, err := auth.ValidateJWT(bearerToken, cfg.secret)
+	if err != nil {
+		respondWithError(writer, 401, "Unauthorized operation")
+		return
+	}
+
 	chirp, err := cfg.db.CreateChirp(
 		request.Context(),
 		database.CreateChirpParams{
 			Body:   params.Body,
-			UserID: params.UserID,
+			UserID: userID,
 		},
 	)
 	if err != nil {

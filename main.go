@@ -16,10 +16,12 @@ import (
 type apiConfig struct {
 	fileserverHits atomic.Int32
 	db             *database.Queries
+	secret         string
 }
 
 func main() {
 	godotenv.Load()
+	secret := os.Getenv("SECRET")
 	dbURL := os.Getenv("DB_URL")
 	db, err := sql.Open("postgres", dbURL)
 	if err != nil {
@@ -38,7 +40,8 @@ func main() {
 	}
 
 	apiCfg := apiConfig{
-		db: dbQueries,
+		db:     dbQueries,
+		secret: secret,
 	}
 
 	serveMux.Handle("/app/", apiCfg.middlewareMetricsInc(http.StripPrefix("/app", http.FileServer(http.Dir(filepathRoot)))))
