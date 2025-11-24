@@ -24,6 +24,12 @@ func (cfg *apiConfig) metricsReset(writer http.ResponseWriter, request *http.Req
 		return
 	}
 
+	err = cfg.db.ResetRefreshTokens(request.Context())
+	if err != nil {
+		respondWithError(writer, 500, fmt.Sprintf("Error reseting refresh tokens: %v", err))
+		return
+	}
+
 	cfg.fileserverHits.Store(0)
 	writer.WriteHeader(200)
 }

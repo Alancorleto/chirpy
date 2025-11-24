@@ -11,14 +11,14 @@ import (
 
 type loggedUser struct {
 	User
-	Token string `json:"token"`
+	Token        string `json:"token"`
+	RefreshToken string `json:"refresh_token"`
 }
 
 func (cfg *apiConfig) loginHandler(writer http.ResponseWriter, request *http.Request) {
 	type parameters struct {
-		Email            string `json:"email"`
-		Password         string `json:"password"`
-		ExpiresInSeconds int    `json:"expires_in_seconds"`
+		Email    string `json:"email"`
+		Password string `json:"password"`
 	}
 
 	params, err := parseRequestParameters[parameters](request)
@@ -43,13 +43,7 @@ func (cfg *apiConfig) loginHandler(writer http.ResponseWriter, request *http.Req
 		return
 	}
 
-	expirationTime := time.Duration(params.ExpiresInSeconds)
-	if expirationTime == 0 {
-		expirationTime = time.Hour
-	}
-	if expirationTime > time.Hour {
-		expirationTime = time.Hour
-	}
+	expirationTime := time.Hour
 
 	token, err := auth.MakeJWT(user.ID, cfg.secret, expirationTime)
 	if err != nil {
@@ -57,12 +51,30 @@ func (cfg *apiConfig) loginHandler(writer http.ResponseWriter, request *http.Req
 		return
 	}
 
-	respondWithJSON(writer, 200, fromDatabaseUserToLoggedUser(user, token))
+	refreshToken, err := auth.MakeRefreshToken()
+	if err != nil {
+		respondWithError(writer, 500, fmt.Sprintf("Error creating refresh token: %s", err))
+		return
+	}
+
+	day := 24 * time.Hour
+
+	cfg.db.AddRefreshToken(
+		request.Context(),
+		database.AddRefreshTokenParams{
+			Token:     refreshToken,
+			UserID:    user.ID,
+			ExpiresAt: time.Now().Add(60 * day),
+		},
+	)
+
+	respondWithJSON(writer, 200, fromDatabaseUserToLoggedUser(user, token, refreshToken))
 }
 
-func fromDatabaseUserToLoggedUser(dbUser database.User, token string) loggedUser {
+func fromDatabaseUserToLoggedUser(dbUser database.User, token string, refreshToken string) loggedUser {
 	return loggedUser{
-		User:  fromDatabaseUserToUser(dbUser),
-		Token: token,
+		User:         fromDatabaseUserToUser(dbUser),
+		Token:        token,
+		RefreshToken: refreshToken,
 	}
 }
