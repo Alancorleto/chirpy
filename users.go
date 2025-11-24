@@ -18,7 +18,7 @@ type User struct {
 	Email     string    `json:"email"`
 }
 
-func (cfg *apiConfig) createUserHandler(writer http.ResponseWriter, request *http.Request) {
+func (cfg *apiConfig) postUsersHandler(writer http.ResponseWriter, request *http.Request) {
 	type parameters struct {
 		Email    string `json:"email"`
 		Password string `json:"password"`
@@ -47,6 +47,50 @@ func (cfg *apiConfig) createUserHandler(writer http.ResponseWriter, request *htt
 	}
 
 	respondWithJSON(writer, 201, fromDatabaseUserToUser(user))
+}
+
+func (cfg *apiConfig) putUsersHandler(writer http.ResponseWriter, request *http.Request) {
+	type parameters struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+	params, err := parseRequestParameters[parameters](request)
+	if err != nil {
+		respondWithError(writer, 500, fmt.Sprintf("Error decoding parameters: %s", err))
+		return
+	}
+
+	hashedPassword, err := auth.HashPassword(params.Password)
+	if err != nil {
+		respondWithError(writer, 500, fmt.Sprintf("Error hashing password: %s", err))
+	}
+
+	token, err := auth.GetBearerToken(request.Header)
+	if err != nil {
+		respondWithError(writer, 401, fmt.Sprintf("Error getting bearer token: %s", err))
+		return
+	}
+
+	userID, err := auth.ValidateJWT(token, cfg.secret)
+	if err != nil {
+		respondWithError(writer, 401, fmt.Sprintf("Error validating access token: %s", err))
+		return
+	}
+
+	user, err := cfg.db.UpdateUser(
+		request.Context(),
+		database.UpdateUserParams{
+			ID:             userID,
+			Email:          params.Email,
+			HashedPassword: hashedPassword,
+		},
+	)
+	if err != nil {
+		respondWithError(writer, 500, fmt.Sprintf("Error updating user: %s", err))
+		return
+	}
+
+	respondWithJSON(writer, 200, fromDatabaseUserToUser(user))
 }
 
 func fromDatabaseUserToUser(dbUser database.User) User {
