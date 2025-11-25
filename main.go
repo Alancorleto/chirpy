@@ -17,12 +17,14 @@ type apiConfig struct {
 	fileserverHits atomic.Int32
 	db             *database.Queries
 	secret         string
+	polkaKey       string
 }
 
 func main() {
 	godotenv.Load()
 	secret := os.Getenv("SECRET")
 	dbURL := os.Getenv("DB_URL")
+	polkaKey := os.Getenv("POLKA_KEY")
 	db, err := sql.Open("postgres", dbURL)
 	if err != nil {
 		fmt.Printf("Error creating SQL database: %v\n", err)
@@ -40,8 +42,9 @@ func main() {
 	}
 
 	apiCfg := apiConfig{
-		db:     dbQueries,
-		secret: secret,
+		db:       dbQueries,
+		secret:   secret,
+		polkaKey: polkaKey,
 	}
 
 	serveMux.Handle("/app/", apiCfg.middlewareMetricsInc(http.StripPrefix("/app", http.FileServer(http.Dir(filepathRoot)))))

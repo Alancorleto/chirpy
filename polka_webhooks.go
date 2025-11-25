@@ -4,10 +4,22 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/alancorleto/chirpy/internal/auth"
 	"github.com/google/uuid"
 )
 
 func (cfg *apiConfig) polkaWebhooksHandler(writer http.ResponseWriter, request *http.Request) {
+	apiKey, err := auth.GetAPIKey(request.Header)
+	if err != nil {
+		respondWithError(writer, 401, fmt.Sprintf("Error getting API key: %s", err))
+		return
+	}
+
+	if apiKey != cfg.polkaKey {
+		respondWithError(writer, 401, "Incorrect API key")
+		return
+	}
+
 	type parameters struct {
 		Event string `json:"event"`
 		Data  struct {
