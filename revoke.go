@@ -8,10 +8,6 @@ import (
 )
 
 func (cfg *apiConfig) revokeHandler(writer http.ResponseWriter, request *http.Request) {
-	type returnVals struct {
-		Token string `json:"token"`
-	}
-
 	refreshToken, err := auth.GetBearerToken(request.Header)
 	if err != nil {
 		respondWithError(writer, 500, fmt.Sprintf("Error getting refresh bearer token: %s", err))

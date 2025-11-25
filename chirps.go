@@ -72,17 +72,56 @@ func (cfg *apiConfig) getChirpsHandler(writer http.ResponseWriter, request *http
 
 func (cfg *apiConfig) getChirpHandler(writer http.ResponseWriter, request *http.Request) {
 	pathParameter := request.PathValue("chirpID")
-	userID, err := uuid.Parse(pathParameter)
+	chirpID, err := uuid.Parse(pathParameter)
 	if err != nil {
-		respondWithError(writer, 500, fmt.Sprintf("Could not parse user id: %s", err))
+		respondWithError(writer, 500, fmt.Sprintf("Could not parse chirp id: %s", err))
 		return
 	}
-	chirp, err := cfg.db.GetChirp(request.Context(), userID)
+	chirp, err := cfg.db.GetChirp(request.Context(), chirpID)
 	if err != nil {
 		respondWithError(writer, 404, "chirp not found")
 		return
 	}
 	respondWithJSON(writer, 200, fromDatabaseChirpToChirp(chirp))
+}
+
+func (cfg *apiConfig) deleteChirpHandler(writer http.ResponseWriter, request *http.Request) {
+	pathParameter := request.PathValue("chirpID")
+	chirpID, err := uuid.Parse(pathParameter)
+	if err != nil {
+		respondWithError(writer, 500, fmt.Sprintf("Could not parse chirp id: %s", err))
+		return
+	}
+	chirp, err := cfg.db.GetChirp(request.Context(), chirpID)
+	if err != nil {
+		respondWithError(writer, 404, "chirp not found")
+		return
+	}
+
+	token, err := auth.GetBearerToken(request.Header)
+	if err != nil {
+		respondWithError(writer, 401, fmt.Sprintf("Error getting bearer token: %s", err))
+		return
+	}
+
+	tokenUserID, err := auth.ValidateJWT(token, cfg.secret)
+	if err != nil {
+		respondWithError(writer, 401, fmt.Sprintf("Error validating access token: %s", err))
+		return
+	}
+
+	if chirp.UserID != tokenUserID {
+		respondWithError(writer, 403, "Unauthorized operation")
+		return
+	}
+
+	err = cfg.db.DeleteChirp(request.Context(), chirpID)
+	if err != nil {
+		respondWithError(writer, 500, fmt.Sprintf("Error vdeleting chirp: %s", err))
+		return
+	}
+
+	writer.WriteHeader(204)
 }
 
 func fromDatabaseChirpToChirp(dbChirp database.Chirp) Chirp {
