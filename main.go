@@ -56,6 +56,7 @@ func main() {
 	serveMux.HandleFunc("POST /api/login", apiCfg.loginHandler)
 	serveMux.HandleFunc("POST /api/refresh", apiCfg.refreshHandler)
 	serveMux.HandleFunc("POST /api/revoke", apiCfg.revokeHandler)
+	serveMux.HandleFunc("POST /api/polka/webhooks", apiCfg.polkaWebhooksHandler)
 	serveMux.HandleFunc("PUT /api/users", apiCfg.putUsersHandler)
 	serveMux.HandleFunc("DELETE /api/chirps/{chirpID}", apiCfg.deleteChirpHandler)
 
