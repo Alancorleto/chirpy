@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"sort"
 	"time"
 
 	"github.com/alancorleto/chirpy/internal/auth"
@@ -81,6 +82,11 @@ func (cfg *apiConfig) getAllChirps(writer http.ResponseWriter, request *http.Req
 	for _, dbChirp := range dbChirps {
 		chirps = append(chirps, fromDatabaseChirpToChirp(dbChirp))
 	}
+
+	if request.URL.Query().Get("sort") == "desc" {
+		sortChirpsDesc(chirps)
+	}
+
 	respondWithJSON(writer, 200, chirps)
 }
 
@@ -95,7 +101,21 @@ func (cfg *apiConfig) getAllChirpsByAuthor(writer http.ResponseWriter, request *
 	for _, dbChirp := range dbChirps {
 		chirps = append(chirps, fromDatabaseChirpToChirp(dbChirp))
 	}
+
+	if request.URL.Query().Get("sort") == "desc" {
+		sortChirpsDesc(chirps)
+	}
+
 	respondWithJSON(writer, 200, chirps)
+}
+
+func sortChirpsDesc(chirps []Chirp) {
+	sort.Slice(
+		chirps,
+		func(i, j int) bool {
+			return chirps[i].CreatedAt.After(chirps[j].CreatedAt)
+		},
+	)
 }
 
 func (cfg *apiConfig) getChirpHandler(writer http.ResponseWriter, request *http.Request) {
